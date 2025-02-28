@@ -1,0 +1,139 @@
+/* Zoomed View Component Styles */
+
+.zoomed-view {
+	display: flex;
+	flex-direction: column;
+	gap: 1.5rem;
+}
+
+.zoomed-view h3 {
+	text-align: center;
+	margin-bottom: 0.5rem;
+	color: var(--primary-color, #007bff);
+}
+
+.zoomed-view h4 {
+	margin: 1rem 0 0.5rem;
+	color: var(--text-color, #343a40);
+	font-size: 1rem;
+}
+
+/* Frequency cards display */
+.visible-frequencies-info {
+	margin-top: 10px;
+	background-color: #f8f9fa;
+	border-radius: 8px;
+	padding: 15px;
+	box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.frequency-cards, .shared-notes-cards {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 10px;
+	margin-top: 10px;
+}
+
+.frequency-card, .shared-note-card {
+	background-color: white;
+	border-radius: 6px;
+	padding: 10px;
+	width: calc(20% - 8px);
+	min-width: 120px;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+	transition: all 0.2s ease;
+}
+
+.frequency-card:hover, .shared-note-card:hover {
+	transform: translateY(-2px);
+	box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+}
+
+.frequency-card.comparison {
+	border-left: 3px solid var(--tick-compare-color, #ff5733);
+}
+
+.frequency-value {
+	font-weight: 600;
+	font-size: 0.9rem;
+	color: var(--primary-color, #007bff);
+}
+
+.frequency-details {
+	font-size: 0.75rem;
+	color: var(--secondary-color, #6c757d);
+	margin-top: 4px;
+}
+
+/* Shared note cards */
+.shared-note-card {
+	display: flex;
+	flex-direction: column;
+	width: calc(25% - 8px);
+}
+
+.shared-note-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 4px;
+}
+
+.cents-badge {
+	background-color: var(--primary-color, #007bff);
+	color: white;
+	padding: 2px 6px;
+	border-radius: 10px;
+	font-size: 0.7rem;
+	font-weight: bold;
+}
+
+.shared-note-frequencies {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+
+.interval-name {
+	font-size: 0.75rem;
+	color: var(--secondary-color, #6c757d);
+	font-style: italic;
+	margin-top: -2px;
+	margin-bottom: 4px;
+}
+
+.more-card {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	color: var(--secondary-color, #6c757d);
+	font-size: 0.9rem;
+	background-color: #f0f0f0;
+}
+
+.no-shared-notes {
+	font-style: italic;
+	color: var(--secondary-color, #6c757d);
+	text-align: center;
+	padding: 10px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 992px) {
+	.frequency-card, .shared-note-card {
+		width: calc(33.33% - 8px);
+	}
+}
+
+@media (max-width: 768px) {
+	.frequency-card, .shared-note-card {
+		width: calc(50% - 8px);
+	}
+}
+
+@media (max-width: 576px) {
+	.frequency-card, .shared-note-card {
+		width: calc(100% - 8px);
+		min-width: 100px;
+	}
+}
