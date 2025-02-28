@@ -47,6 +47,8 @@ function ZoomedView({ frequencies, compareFrequencies, sharedNotes, selectedRang
 			}));
 	};
 	
+	// Function is kept for potential future needs but currently not used
+	/* 
 	const getVisibleCompareFrequencies = () => {
 		if (!compareFrequencies || compareFrequencies.length === 0) return [];
 		
@@ -59,6 +61,7 @@ function ZoomedView({ frequencies, compareFrequencies, sharedNotes, selectedRang
 				formattedFrequency: formatFrequency(f.frequency)
 			}));
 	};
+	*/
 	
 	// Get visible shared notes based on current magnifier range
 	const getVisibleSharedNotes = () => {
@@ -73,9 +76,6 @@ function ZoomedView({ frequencies, compareFrequencies, sharedNotes, selectedRang
 	};
 	
 	const visibleFrequencies = getVisibleFrequencies();
-	// We're not using visibleCompareFrequencies directly in the rendering, but keeping the function
-	// in case it's needed in future updates
-	// const visibleCompareFrequencies = getVisibleCompareFrequencies();
 	const visibleSharedNotes = getVisibleSharedNotes();
 	
 	return (
