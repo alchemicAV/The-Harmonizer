@@ -234,7 +234,7 @@ function EnhancedRulerSystem({
 			document.body.style.WebkitUserSelect = '';
 			document.body.style.msUserSelect = '';
 		};
-	}, [isDragging]);
+	}, [isDragging, handleMouseMove, handleMouseUp]);
 	
 	// Toggle scale type
 	const toggleScale = () => {
