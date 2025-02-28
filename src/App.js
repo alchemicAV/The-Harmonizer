@@ -67,7 +67,7 @@ function App() {
 			);
 			setFrequencies(calculatedFreqs);
 		}
-	}, [rootNoteHz, selectedScale]);
+	}, [rootNoteHz, selectedScale, MIN_FREQ, MAX_FREQ]);
 	
 	// Calculate comparison frequencies
 	useEffect(() => {
@@ -80,7 +80,7 @@ function App() {
 			);
 			setCompareFrequencies(compareFreqs);
 		}
-	}, [showComparison, compareRootHz, selectedScale]);
+	}, [showComparison, compareRootHz, selectedScale, MIN_FREQ, MAX_FREQ]);
 	
 	// Find shared notes between root and comparison frequencies
 	useEffect(() => {
