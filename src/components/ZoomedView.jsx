@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import EnhancedRulerSystem from './EnhancedRulerSystem';
 import { formatFrequency } from '../utils/frequencyUtils';
 import '../styles/ZoomedView.css';
@@ -73,7 +73,9 @@ function ZoomedView({ frequencies, compareFrequencies, sharedNotes, selectedRang
 	};
 	
 	const visibleFrequencies = getVisibleFrequencies();
-	const visibleCompareFrequencies = getVisibleCompareFrequencies();
+	// We're not using visibleCompareFrequencies directly in the rendering, but keeping the function
+	// in case it's needed in future updates
+	// const visibleCompareFrequencies = getVisibleCompareFrequencies();
 	const visibleSharedNotes = getVisibleSharedNotes();
 	
 	return (
