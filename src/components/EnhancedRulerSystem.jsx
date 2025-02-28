@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { calculatePosition, generateRulerTicks, getFrequencyRangeLabel } from '../utils/rulerUtils';
 import { frequencyToColor } from '../utils/colorUtils';
 import '../styles/EnhancedRulerSystem.css';
@@ -189,8 +189,8 @@ function EnhancedRulerSystem({
 		setIsDragging(true);
 	};
 	
-	// Handle mouse move with prevention of text selection
-	const handleMouseMove = (e) => {
+	// Wrap handle functions in useCallback to prevent them from changing on every render
+	const handleMouseMove = useCallback((e) => {
 		if (isDragging && fullRulerRef.current) {
 			// Prevent default browser behavior like text selection
 			e.preventDefault();
@@ -199,11 +199,11 @@ function EnhancedRulerSystem({
 			const clickPositionNormalized = (e.clientX - rect.left) / rect.width;
 			setFocusPoint(Math.max(0, Math.min(1, clickPositionNormalized)));
 		}
-	};
+	}, [isDragging]);
 	
-	const handleMouseUp = () => {
+	const handleMouseUp = useCallback(() => {
 		setIsDragging(false);
-	};
+	}, []);
 	
 	// Add and remove event listeners for dragging
 	useEffect(() => {
