@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Header from './components/Header';
 import EnhancedRulerSystem from './components/EnhancedRulerSystem';
 import CentralWindow from './components/CentralWindow';
+import WelcomePopup from './components/WelcomePopup'; // Import the new component
 import { parseRootNote, findSharedNotes } from './utils/frequencyUtils';
 import { calculateScaleFrequencies } from './utils/scaleUtils';
 import './styles/App.css';
@@ -89,12 +90,12 @@ function App() {
 			const freqArray1 = frequencies.map(f => f.frequency);
 			const freqArray2 = compareFrequencies.map(f => f.frequency);
 			
-			// Find shared notes using our enhanced function
-			const shared = findSharedNotes(freqArray1, freqArray2);
+			// Find shared notes using our enhanced function with the default tolerance of 23.46 cents
+			const shared = findSharedNotes(freqArray1, freqArray2, 23.46);
 			
-			// Sort shared notes by centsDifference for better display
+			// Sort shared notes by frequency (low to high) for better display
 			const sortedShared = [...shared].sort((a, b) => 
-				parseFloat(a.centsDifference) - parseFloat(b.centsDifference)
+				parseFloat(a.freq1) - parseFloat(b.freq1)
 			);
 			
 			setSharedNotes(sortedShared);
@@ -103,6 +104,9 @@ function App() {
 	
 	return (
 		<div className="app">
+			{/* Add the WelcomePopup component here */}
+			<WelcomePopup />
+			
 			<h1>The Harmonizer</h1>
 			
 			<Header
@@ -139,8 +143,8 @@ function App() {
 			{/* Only show it when not in zoomed view mode to avoid duplicate rulers */}
 			{viewMode !== 'zoomed' && (
 				<EnhancedRulerSystem
-					frequencies={frequencies.map(f => f.frequency)}
-					compareFrequencies={compareFrequencies.map(f => f.frequency)}
+					frequencies={frequencies}  // Now we can pass either the full objects or just values
+					compareFrequencies={compareFrequencies}
 					showComparison={showComparison && compareRootHz !== null}
 					selectedRange={selectedRange}
 					minFreq={MIN_FREQ}
