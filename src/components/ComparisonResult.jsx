@@ -1,20 +1,85 @@
-import React from 'react';
-import { formatFrequency } from '../utils/frequencyUtils';
+import React, { useState, useEffect } from 'react';
+import { formatFrequency, findSharedNotes } from '../utils/frequencyUtils';
 import '../styles/ComparisonResult.css';
 
-function ComparisonResult({ sharedNotes, frequencies, compareFrequencies }) {
+function ComparisonResult({ sharedNotes: initialSharedNotes, frequencies, compareFrequencies }) {
+	// State for cents tolerance
+	const [centsTolerance, setCentsTolerance] = useState(23.46);
+	// State for recalculated shared notes based on tolerance
+	const [sharedNotes, setSharedNotes] = useState(initialSharedNotes || []);
+
+	// Update shared notes when cents tolerance changes
+	const handleCentsToleranceChange = (e) => {
+		const newTolerance = parseFloat(e.target.value);
+		if (!isNaN(newTolerance) && newTolerance > 0) {
+			setCentsTolerance(newTolerance);
+			
+			// Only recalculate if we have both frequency arrays
+			if (frequencies?.length > 0 && compareFrequencies?.length > 0) {
+				// Get raw frequencies from both arrays
+				const freqArray1 = frequencies.map(f => f.frequency);
+				const freqArray2 = compareFrequencies.map(f => f.frequency);
+				
+				// Find shared notes with new tolerance
+				const newSharedNotes = findSharedNotes(freqArray1, freqArray2, newTolerance);
+				
+				// Sort by frequency (low to high) instead of cents difference
+				const sortedSharedNotes = [...newSharedNotes].sort((a, b) => a.freq1 - b.freq1);
+				
+				setSharedNotes(sortedSharedNotes);
+			}
+		}
+	};
+	
+	// Handle initial sorting and tolerance setting
+	useEffect(() => {
+		if (initialSharedNotes && initialSharedNotes.length > 0) {
+			// Sort by frequency instead of cents difference
+			const sortedNotes = [...initialSharedNotes].sort((a, b) => a.freq1 - b.freq1);
+			setSharedNotes(sortedNotes);
+		} else {
+			setSharedNotes([]);
+		}
+	}, [initialSharedNotes]);
+
 	if (!sharedNotes || sharedNotes.length === 0) {
 		return (
 			<div className="comparison-results">
-				<h3>Shared Notes (within 23.46 cents tolerance)</h3>
-				<p>No shared notes found within 23.46 cents tolerance.</p>
+				<div className="tolerance-control">
+					<label>
+						Shared Notes (within 
+						<input 
+							type="number" 
+							value={centsTolerance}
+							onChange={handleCentsToleranceChange}
+							className="cents-tolerance-input"
+							min="0.01"
+							step="0.01"
+						/>
+						cents tolerance)
+					</label>
+				</div>
+				<p>No shared notes found within {centsTolerance} cents tolerance.</p>
 			</div>
 		);
 	}
 	
 	return (
 		<div className="comparison-results">
-			<h3>Shared Notes (within 23.46 cents tolerance)</h3>
+			<div className="tolerance-control">
+				<label>
+					Shared Notes (within 
+					<input 
+						type="number" 
+						value={centsTolerance}
+						onChange={handleCentsToleranceChange}
+						className="cents-tolerance-input"
+						min="0.01"
+						step="0.01"
+					/>
+					cents tolerance)
+				</label>
+			</div>
 			<table className="shared-notes-table">
 				<thead>
 					<tr>

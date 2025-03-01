@@ -1,6 +1,7 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { calculatePosition, generateRulerTicks, getFrequencyRangeLabel } from '../utils/rulerUtils';
 import { frequencyToColor } from '../utils/colorUtils';
+import { formatFrequency, getIntervalName } from '../utils/frequencyUtils';
 import '../styles/EnhancedRulerSystem.css';
 
 function EnhancedRulerSystem({
@@ -16,10 +17,25 @@ function EnhancedRulerSystem({
 	rootOctave = null // Add property to get root octave for scale degree calculation
 }) {
 	// State for the zoomed view controls
-	const [zoomLevel, setZoomLevel] = useState(7); // Start at 7x zoom
+	const [zoomLevel, setZoomLevel] = useState(1); // Start at 1x zoom (was 7x)
 	const [isDragging, setIsDragging] = useState(false); // For drag functionality
-	const [useLogScale, setUseLogScale] = useState(isLogScale);
+	const [useLogScale, setUseLogScale] = useState(false); // Start in linear mode (was true for log)
 	const [focusPoint, setFocusPoint] = useState(0.5); // Normalized position (0-1) where zoom is centered
+	
+	// Helper to get the frequency value from either an object or a number
+	const getFrequencyValue = (freqItem) => {
+		// If it's a plain number, return it
+		if (typeof freqItem === 'number') {
+			return freqItem;
+		}
+		// If it's an object with a frequency property, return that
+		if (freqItem && typeof freqItem === 'object' && 'frequency' in freqItem) {
+			return freqItem.frequency;
+		}
+		// Fallback (should not happen)
+		console.warn('Unknown frequency format:', freqItem);
+		return 0;
+	};
 	
 	// Define range bounds for each selected range
 	const rangeBounds = {
@@ -38,17 +54,8 @@ function EnhancedRulerSystem({
 	const fullRulerRef = useRef(null);
 	const magnifierRef = useRef(null);
 	
-	// Format frequency based on display preference
-	const formatDisplayFrequency = (frequency) => {
-		if (isRootInSeconds) {
-			// Convert to seconds for display
-			const seconds = 1 / frequency;
-			return `${seconds.toFixed(4)} s`;
-		} else {
-			// Display in Hz
-			return `${frequency.toExponential(2)} Hz`;
-		}
-	};
+	// Format frequency based on display preference - now we use the formatFrequency 
+	// utility which already handles both Hz and time units appropriately
 	
 	// Calculate scale degree relative to root
 	const calculateScaleDegree = (frequency, rootFreq) => {
@@ -70,7 +77,7 @@ function EnhancedRulerSystem({
 	// Calculate the zoomed range based on zoom level and focus point
 	const calculateZoomedRange = () => {
 		if (useLogScale) {
-			// For logarithmic scale
+			// For logarithmic scale - unchanged
 			const logMin = Math.log10(baseRange.min);
 			const logMax = Math.log10(baseRange.max);
 			const logRange = logMax - logMin;
@@ -92,25 +99,30 @@ function EnhancedRulerSystem({
 				max: Math.pow(10, clampedLogMax)
 			};
 		} else {
-			// For linear scale
-			const range = baseRange.max - baseRange.min;
-			const zoomWindowSize = range / zoomLevel;
+			// For linear scale - always use logarithmic mapping to ensure smooth magnifier movement
+			// especially important for time domain and other extreme ranges
+			const logMin = Math.log10(baseRange.min);
+			const logMax = Math.log10(baseRange.max);
+			const logRange = logMax - logMin;
 			
-			// Calculate new min and max based on focus point
-			// Direct mapping of focus point to the position in the range
-			const rangePosition = baseRange.min + (range * focusPoint);
-			const halfWindow = zoomWindowSize / 2;
+			// Map the linear focus point to a logarithmic position
+			const logPosition = logMin + (logRange * focusPoint);
 			
-			const newMin = rangePosition - halfWindow;
-			const newMax = rangePosition + halfWindow;
+			// Calculate a window size that feels proportional
+			const logWindowSize = logRange / zoomLevel;
+			
+			// Calculate new min and max in log space
+			let newLogMin = logPosition - (logWindowSize / 2);
+			let newLogMax = logPosition + (logWindowSize / 2);
 			
 			// Clamp to ensure we don't go outside the base range
-			const clampedMin = Math.max(newMin, baseRange.min);
-			const clampedMax = Math.min(newMax, baseRange.max);
+			newLogMin = Math.max(newLogMin, logMin);
+			newLogMax = Math.min(newLogMax, logMax);
 			
+			// Convert back to linear space
 			return {
-				min: clampedMin,
-				max: clampedMax
+				min: Math.pow(10, newLogMin),
+				max: Math.pow(10, newLogMax)
 			};
 		}
 	};
@@ -124,10 +136,16 @@ function EnhancedRulerSystem({
 	
 	// Filter frequencies to those within the current range for zoomed view
 	const visibleFrequencies = frequencies
-		.filter(f => f >= zoomedRange.min && f <= zoomedRange.max);
+		.filter(freq => {
+			const freqValue = getFrequencyValue(freq);
+			return freqValue >= zoomedRange.min && freqValue <= zoomedRange.max;
+		});
 	
 	const visibleCompareFrequencies = compareFrequencies
-		.filter(f => f >= zoomedRange.min && f <= zoomedRange.max);
+		.filter(freq => {
+			const freqValue = getFrequencyValue(freq);
+			return freqValue >= zoomedRange.min && freqValue <= zoomedRange.max;
+		});
 	
 	// Update parent component with new range when it changes
 	useEffect(() => {
@@ -189,8 +207,8 @@ function EnhancedRulerSystem({
 		setIsDragging(true);
 	};
 	
-	// Wrap handle functions in useCallback to prevent them from changing on every render
-	const handleMouseMove = useCallback((e) => {
+	// Handle mouse move with prevention of text selection
+	const handleMouseMove = (e) => {
 		if (isDragging && fullRulerRef.current) {
 			// Prevent default browser behavior like text selection
 			e.preventDefault();
@@ -199,11 +217,11 @@ function EnhancedRulerSystem({
 			const clickPositionNormalized = (e.clientX - rect.left) / rect.width;
 			setFocusPoint(Math.max(0, Math.min(1, clickPositionNormalized)));
 		}
-	}, [isDragging]);
+	};
 	
-	const handleMouseUp = useCallback(() => {
+	const handleMouseUp = () => {
 		setIsDragging(false);
-	}, []);
+	};
 	
 	// Add and remove event listeners for dragging
 	useEffect(() => {
@@ -242,7 +260,7 @@ function EnhancedRulerSystem({
 	};
 	
 	// Calculate position on the ruler - accounting for log vs linear scale
-	const getTickPosition = (frequency, min, max, isLog) => {
+	const getTickPosition = (frequency, min, max, isLog = useLogScale) => {
 		if (isLog) {
 			return calculatePosition(frequency, min, max);
 		} else {
@@ -258,61 +276,56 @@ function EnhancedRulerSystem({
 				{/* Frequency Ticks Section */}
 				<div className="zoomed-view-section">
 					<div className="zoomed-ticks">
-						{visibleFrequencies.map((freq, index) => {
-							// Get detailed frequency data if available
-							const freqData = frequencies.find(f => f.frequency === freq) || { frequency: freq };
-							
-							// Calculate scale degree if root octave is provided
-							const scaleDegree = rootOctave ? calculateScaleDegree(freq, rootOctave) : null;
+						{visibleFrequencies.map((freqItem, index) => {
+							const freqValue = getFrequencyValue(freqItem);
+							// Get additional data if it's available
+							const hasFreqData = typeof freqItem === 'object' && 'intervalName' in freqItem;
 							
 							return (
 								<div
 									key={`tick-${index}`}
 									className="tick"
 									style={{
-										left: `${getTickPosition(freq, zoomedRange.min, zoomedRange.max, useLogScale)}%`,
-										backgroundColor: frequencyToColor(freq)
+										left: `${getTickPosition(freqValue, zoomedRange.min, zoomedRange.max, useLogScale)}%`,
+										backgroundColor: frequencyToColor(freqValue)
 									}}
-									data-frequency={freq}
+									data-frequency={freqValue}
 								>
 									<div className="tick-tooltip">
-										<div className="tooltip-title">Frequency: {formatDisplayFrequency(freq)}</div>
-										{freqData.intervalName && (
+										<div className="tooltip-title">Frequency: {formatFrequency(freqValue)}</div>
+										{hasFreqData && (
 											<>
-												<div className="tooltip-row">Interval: {freqData.intervalName}</div>
-												<div className="tooltip-row">Octave: {formatDisplayFrequency(freqData.octave || 0)}</div>
-												{freqData.ratio && <div className="tooltip-row">Ratio: {freqData.ratio}</div>}
+												<div className="tooltip-row">Interval: {freqItem.intervalName}</div>
+												<div className="tooltip-row">Octave: {formatFrequency(freqItem.octave || 0)}</div>
+												{freqItem.ratio && <div className="tooltip-row">Ratio: {freqItem.ratio}</div>}
 											</>
-										)}
-										{scaleDegree && (
-											<div className="tooltip-row">Scale Degree: {scaleDegree}</div>
 										)}
 									</div>
 								</div>
 							);
 						})}
 						
-						{showComparison && visibleCompareFrequencies.map((freq, index) => {
-							// Get detailed frequency data if available
-							const freqData = compareFrequencies.find(f => f.frequency === freq) || { frequency: freq };
+						{showComparison && visibleCompareFrequencies.map((freqItem, index) => {
+							const freqValue = getFrequencyValue(freqItem);
+							const hasFreqData = typeof freqItem === 'object' && 'intervalName' in freqItem;
 							
 							return (
 								<div
 									key={`compare-tick-${index}`}
 									className="compare-tick"
 									style={{
-										left: `${getTickPosition(freq, zoomedRange.min, zoomedRange.max, useLogScale)}%`,
-										backgroundColor: frequencyToColor(freq)
+										left: `${getTickPosition(freqValue, zoomedRange.min, zoomedRange.max, useLogScale)}%`,
+										backgroundColor: frequencyToColor(freqValue)
 									}}
-									data-frequency={freq}
+									data-frequency={freqValue}
 								>
 									<div className="tick-tooltip">
-										<div className="tooltip-title">Comparison: {formatDisplayFrequency(freq)}</div>
-										{freqData.intervalName && (
+										<div className="tooltip-title">Comparison: {formatFrequency(freqValue)}</div>
+										{hasFreqData && (
 											<>
-												<div className="tooltip-row">Interval: {freqData.intervalName}</div>
-												<div className="tooltip-row">Octave: {formatDisplayFrequency(freqData.octave || 0)}</div>
-												{freqData.ratio && <div className="tooltip-row">Ratio: {freqData.ratio}</div>}
+												<div className="tooltip-row">Interval: {freqItem.intervalName}</div>
+												<div className="tooltip-row">Octave: {formatFrequency(freqItem.octave || 0)}</div>
+												{freqItem.ratio && <div className="tooltip-row">Ratio: {freqItem.ratio}</div>}
 											</>
 										)}
 									</div>
@@ -326,9 +339,9 @@ function EnhancedRulerSystem({
 				<div className="zoomed-ruler-section">
 					<div className="zoomed-ruler">
 						<div className="ruler-range-labels">
-							<span className="range-label left">{formatDisplayFrequency(zoomedRange.min)}</span>
+							<span className="range-label left">{formatFrequency(zoomedRange.min)}</span>
 							<span className="range-label center">{getFrequencyRangeLabel((zoomedRange.min + zoomedRange.max) / 2)}</span>
-							<span className="range-label right">{formatDisplayFrequency(zoomedRange.max)}</span>
+							<span className="range-label right">{formatFrequency(zoomedRange.max)}</span>
 						</div>
 						
 						{zoomedRulerTicks.map((tick, index) => (
@@ -376,9 +389,9 @@ function EnhancedRulerSystem({
 			>
 				<div className="full-ruler">
 					<div className="ruler-range-labels">
-						<span className="range-label left">{formatDisplayFrequency(baseRange.min)}</span>
+						<span className="range-label left">{formatFrequency(baseRange.min)}</span>
 						<span className="range-label center">{selectedRange.charAt(0).toUpperCase() + selectedRange.slice(1)} Range</span>
-						<span className="range-label right">{formatDisplayFrequency(baseRange.max)}</span>
+						<span className="range-label right">{formatFrequency(baseRange.max)}</span>
 					</div>
 					
 					{fullRulerTicks.map((tick, index) => (
