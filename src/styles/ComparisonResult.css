@@ -56,6 +56,22 @@
 	background-color: rgba(0, 123, 255, 0.05);
 }
 
+/* Tolerance Control Styles */
+.tolerance-control {
+	display: flex;
+	align-items: center;
+	margin-bottom: 1rem;
+}
+
+.cents-tolerance-input {
+	width: 60px;
+	margin: 0 8px;
+	padding: 4px;
+	border: 1px solid var(--border-color);
+	border-radius: 4px;
+	text-align: center;
+}
+
 @media (max-width: 768px) {
 	.shared-notes-table th,
 	.shared-notes-table td {
@@ -67,5 +83,14 @@
 		display: block;
 		overflow-x: auto;
 		white-space: nowrap;
+	}
+	
+	.tolerance-control {
+		flex-direction: column;
+		align-items: flex-start;
+	}
+	
+	.cents-tolerance-input {
+		margin: 4px 0;
 	}
 }
