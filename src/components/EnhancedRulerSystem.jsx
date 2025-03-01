@@ -1,7 +1,7 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { calculatePosition, generateRulerTicks, getFrequencyRangeLabel } from '../utils/rulerUtils';
 import { frequencyToColor } from '../utils/colorUtils';
-import { formatFrequency, getIntervalName } from '../utils/frequencyUtils';
+import { formatFrequency } from '../utils/frequencyUtils';
 import '../styles/EnhancedRulerSystem.css';
 
 function EnhancedRulerSystem({
@@ -53,26 +53,6 @@ function EnhancedRulerSystem({
 	// Refs for ruler elements
 	const fullRulerRef = useRef(null);
 	const magnifierRef = useRef(null);
-	
-	// Format frequency based on display preference - now we use the formatFrequency 
-	// utility which already handles both Hz and time units appropriately
-	
-	// Calculate scale degree relative to root
-	const calculateScaleDegree = (frequency, rootFreq) => {
-		if (!rootFreq) return null;
-		
-		// Calculate cents above root
-		const cents = 1200 * Math.log2(frequency / rootFreq);
-		
-		// Map cents to scale degree
-		// 0 cents = 1st degree (root)
-		// 100 cents = 2nd degree (minor 2nd)
-		// 200 cents = 3rd degree (major 2nd)
-		// etc.
-		
-		const degree = Math.round(cents / 100) + 1;
-		return degree;
-	};
 	
 	// Calculate the zoomed range based on zoom level and focus point
 	const calculateZoomedRange = () => {
@@ -207,8 +187,8 @@ function EnhancedRulerSystem({
 		setIsDragging(true);
 	};
 	
-	// Handle mouse move with prevention of text selection
-	const handleMouseMove = (e) => {
+	// Define these functions with useCallback to fix the React hooks dependency warning
+	const handleMouseMove = useCallback((e) => {
 		if (isDragging && fullRulerRef.current) {
 			// Prevent default browser behavior like text selection
 			e.preventDefault();
@@ -217,11 +197,11 @@ function EnhancedRulerSystem({
 			const clickPositionNormalized = (e.clientX - rect.left) / rect.width;
 			setFocusPoint(Math.max(0, Math.min(1, clickPositionNormalized)));
 		}
-	};
+	}, [isDragging, fullRulerRef]);
 	
-	const handleMouseUp = () => {
+	const handleMouseUp = useCallback(() => {
 		setIsDragging(false);
-	};
+	}, []);
 	
 	// Add and remove event listeners for dragging
 	useEffect(() => {
